@@ -1,0 +1,66 @@
+ pipeline {
+    agent any
+
+    environment {
+        MAVEN_HOME = tool 'Maven 3.9.8' // Nombre de la instalación de Maven en Jenkins
+        JAVA_HOME = tool 'JDK 1.8' // Nombre de la instalación de JDK en Jenkins
+    }
+
+
+    stages {
+    stage('Checkout') {
+    steps {
+    // Obtiene el código del repositorio
+    checkout scm
+    }
+    }
+
+    stage('Build') {
+    steps {
+    script {
+    // Compila el proyecto Java
+    sh "${MAVEN_HOME}/bin/mvn clean compile"
+    }
+    }
+    }
+
+    stage('Test') {
+    steps {
+    script {
+    // Ejecuta las pruebas unitarias
+    sh "${MAVEN_HOME}/bin/mvn test"
+    }
+    }
+    }
+
+    stage('Code Coverage') {
+    steps {
+    script {
+    // Genera el informe de cobertura de código
+    sh "${MAVEN_HOME}/bin/mvn jacoco:report"
+    }
+    }
+    post {
+    always {
+    // Publica el informe de cobertura de código
+    jacoco(execPattern: '**/target/*.exec', classPattern: '**/target/classes', sourcePattern: '**/src/main/java', exclusionPattern: '**/src/test*')
+    }
+    }
+    }
+    }
+
+    post {
+    always {
+    // Limpia los archivos temporales generados durante el build
+    cleanWs()
+    }
+    success {
+    // Notificación en caso de éxito
+    echo 'Build y pruebas exitosas!'
+    }
+    failure {
+    // Notificación en caso de fallo
+    echo 'Error en Build o pruebas.'
+    }
+    }
+    }
